@@ -1,0 +1,52 @@
+---
+
+- set_fact:
+    os_name: "{{ 'rhel' if ansible_distribution == 'RedHat' else 'centos' }}" 
+
+- name: Copy nginx_signing.key
+  copy: src=files/nginx_signing.key dest=/tmp/nginx_signing.key
+  when: 
+    - nginx_upstream_repo
+
+- name: Add nginx.org signing key
+  rpm_key:
+    key: /tmp/nginx_signing.key
+    state: present
+  when: 
+    - nginx_upstream_repo    
+
+- name: Configure URL for nginx repository. 
+  set_fact:
+    repo_url: "{{ 'http://nginx.org/packages/' + os_name + '/' + ansible_distribution_major_version + '/$basearch/' 
+      if not nginx_mainline else 
+      'http://nginx.org/packages/mainline/' + os_name + '/' + ansible_distribution_major_version + '/$basearch/' }}"
+  when:
+    - nginx_upstream_repo
+
+- name: Add nginx.org yum repository for {{ os_name }}/{{ ansible_distribution_major_version }}
+  yum_repository:
+    name: nginx
+    description: "Latest version of nginx from nginx.org"
+    enabled: "yes"
+    gpgcheck: "yes"
+    baseurl: "{{ repo_url }}"
+    state: present
+  register: nginx_upstream_added
+  when: 
+    - ansible_distribution_major_version in nginx_upstream_supported
+    - nginx_upstream_repo
+
+- name: Disable EPEL
+  yum_repository: name=epel state=absent
+  notify: yum-clean-metadata
+  when: 
+    - nginx_upstream_repo
+
+- name: Install nginx.
+  yum: name=nginx state=present update_cache=yes
+  when:
+    - (nginx_upstream_repo and nginx_upstream_added) or 
+      (not nginx_upstream_repo and not nginx_upstream_added)
+
+- name: Ensure nginx is running and will start on boot. 
+  service: name=nginx state=started enabled=yes

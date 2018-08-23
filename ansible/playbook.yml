@@ -1,0 +1,13 @@
+---
+- hosts: all
+  become: yes
+  roles:
+    - nginx 
+    - php-fpm
+    - wordpress
+  vars:
+    python_interpreter: /usr/bin/python3
+    nginx_upstream_repo: yes
+    nginx_mainline: no
+    wp_server_names: blog.thecommandline.org
+

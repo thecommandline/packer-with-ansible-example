@@ -1,0 +1,24 @@
+server{
+    listen 80 default_server;
+
+    server_name {{ wp_server_names }};
+
+    root {{ wp_home }}/wordpress;
+    index index.html index.php;
+
+    access_log {{ wp_home }}/logs/access.log;
+    error_log {{ wp_home }}/logs/error.log notice;
+
+    if ($http_x_forwarded_proto != "https") {
+      rewrite ^(.*)$ https://$server_name$1 permanent;
+    }
+
+    location ~ \.php$ {
+      include         fastcgi_params;
+      fastcgi_param   SCRIPT_FILENAME    $document_root$fastcgi_script_name;
+      fastcgi_pass    phpcgi_www;
+      fastcgi_send_timeout 75s;
+      fastcgi_read_timeout 180s;
+      fastcgi_connect_timeout 75s;
+    }
+}

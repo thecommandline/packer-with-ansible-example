@@ -1,0 +1,4 @@
+---
+
+wp_package: latest.tar.gz
+wp_home: /home/app

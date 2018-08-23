@@ -1,0 +1,8 @@
+- name: Install php-fpm.
+  apt: name=php-fpm state=present
+
+- name: Install php mysql extentions.
+  apt: name=php-mysql state=present
+
+- name: Ensure php-fpm is running and will start on boot. 
+  service: name=php7.0-fpm state=started enabled=yes
